@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Midnight Library — Elite Personal Book Tracker & Literary Archive</title>
+  <meta name="description" content="An elite, production-grade client-side book tracker with dynamic light and dark modes, reading progress tracking, star ratings, and local-first data architecture." />
+
+  <!-- Google Fonts: Playfair Display, Cormorant Garamond, and Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            themeBg: 'var(--bg-primary)',
+            themeSurface: 'var(--bg-surface)',
+            themeSurfaceElevated: 'var(--bg-surface-elevated)',
+            themeSurfaceHover: 'var(--bg-surface-hover)',
+            themeBorder: 'var(--border-subtle)',
+            themeBorderLight: 'var(--border-light)',
+            themeText: 'var(--text-primary)',
+            themeTextMuted: 'var(--text-muted)',
+            themeGold: 'var(--accent-gold)',
+            themeGoldLight: 'var(--accent-gold-light)',
+            themeGoldGlow: 'var(--accent-gold-glow)',
+            themeEmerald: 'var(--status-finished-text)',
+          },
+          fontFamily: {
+            playfair: ['"Playfair Display"', 'Georgia', 'serif'],
+            cormorant: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            inter: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Dynamic Theme CSS Variables */
+    :root {
+      /* Pristine Paper Light Mode */
+      --bg-primary: #fcfbfa;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #f5f3ee;
+      --bg-surface-hover: #ece8de;
+      --border-subtle: #e6e1d6;
+      --border-light: #dcd6c8;
+      --border-input: #e2ddd2;
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent-gold: #b48316;
+      --accent-gold-light: #d4af37;
+      --accent-gold-glow: rgba(180, 131, 22, 0.18);
+      --status-finished-bg: #ecfdf5;
+      --status-finished-text: #059669;
+      --status-finished-border: #a7f3d0;
+      --status-reading-bg: #fefce8;
+      --status-reading-text: #b48316;
+      --status-reading-border: #fde047;
+      --status-toread-bg: #f1f5f9;
+      --status-toread-text: #475569;
+      --status-toread-border: #cbd5e1;
+      --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
+      --ambient-glow: radial-gradient(circle at 50% -10%, rgba(180, 131, 22, 0.06) 0%, rgba(252, 251, 250, 0) 70%);
+      --header-bg: rgba(252, 251, 250, 0.88);
+    }
+
+    html.dark {
+      /* Midnight Obsidian Dark Mode */
+      --bg-primary: #07080a;
+      --bg-surface: #0f1117;
+      --bg-surface-elevated: #141722;
+      --bg-surface-hover: #1c202e;
+      --border-subtle: #1e2230;
+      --border-light: #2c3247;
+      --border-input: #10131d;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-gold: #d4af37;
+      --accent-gold-light: #f3e39d;
+      --accent-gold-glow: rgba(212, 175, 55, 0.28);
+      --status-finished-bg: rgba(5, 150, 105, 0.15);
+      --status-finished-text: #10b981;
+      --status-finished-border: rgba(16, 185, 129, 0.4);
+      --status-reading-bg: rgba(212, 175, 55, 0.15);
+      --status-reading-text: #d4af37;
+      --status-reading-border: rgba(212, 175, 55, 0.4);
+      --status-toread-bg: #141722;
+      --status-toread-text: #cbd5e1;
+      --status-toread-border: #1e2230;
+      --card-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+      --ambient-glow: radial-gradient(circle at 50% -10%, rgba(212, 175, 55, 0.12) 0%, rgba(7, 8, 10, 0) 70%);
+      --header-bg: rgba(7, 8, 10, 0.90);
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-gold);
+    }
+
+    /* Ambient Background Glow */
+    .ambient-glow {
+      background: var(--ambient-glow);
+    }
+
+    /* Cinematic Intro Transitions & Keyframes */
+    #cinematic-intro {
+      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #cinematic-intro.intro-fade-out {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    @keyframes goldGlowWipe {
+      0% {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+        letter-spacing: 0.18em;
+        filter: blur(8px);
+      }
+      40% {
+        opacity: 0.8;
+        filter: blur(0px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        letter-spacing: 0.28em;
+        filter: blur(0px);
+      }
+    }
+
+    @keyframes beamPulse {
+      0%, 100% {
+        opacity: 0.4;
+        width: 60%;
+      }
+      50% {
+        opacity: 1;
+        width: 90%;
+      }
+    }
+
+    .cinematic-title {
+      animation: goldGlowWipe 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      background: linear-gradient(135deg, #fff7de 0%, #d4af37 40%, #fae29c 70%, #9d7c18 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(212, 175, 55, 0.4);
+    }
+
+    .cinematic-beam {
+      animation: beamPulse 3s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, #d4af37, #fff4d4, #d4af37, transparent);
+    }
+
+    /* Book Card Hover & Shadows */
+    .book-card {
+      background-color: var(--bg-surface);
+      border-color: var(--border-subtle);
+      box-shadow: var(--card-shadow);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .book-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent-gold);
+    }
+
+    /* Smooth Deletion Collapse Animation */
+    .card-fade-out {
+      opacity: 0 !important;
+      transform: scale(0.9) translateY(-16px) !important;
+      max-height: 0 !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      overflow: hidden !important;
+      pointer-events: none !important;
+      transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    /* Card Entry Animation */
+    @keyframes cardSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .card-enter {
+      animation: cardSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Star Interactions */
+    .star-btn {
+      transition: transform 0.15s ease, color 0.15s ease;
+    }
+    .star-btn:hover {
+      transform: scale(1.25);
+    }
+  </style>
+</head>
+<body class="selection:bg-amber-500/20 selection:text-amber-800 dark:selection:text-amber-200">
+
+  <!-- ======================================================== -->
+  <!-- 1. CINEMATIC NETFLIX-STYLE INTRO & EDITORIAL BRIEFING CARD -->
+  <!-- ======================================================== -->
+  <div id="cinematic-intro" class="fixed inset-0 z-50 flex items-center justify-center bg-[#07080a] p-4 select-none">
+    <div class="relative max-w-2xl w-full text-center my-auto">
+      
+      <!-- Top Crest Emblem -->
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#0f1117] border border-[#1e2230] flex items-center justify-center text-[#d4af37] shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+
+      <!-- Majestic Title Reveal (Playfair Display) -->
+      <h1 class="cinematic-title font-playfair text-3xl sm:text-5xl font-extrabold tracking-widest uppercase mb-1">
+        The Midnight Library
+      </h1>
+
+      <p class="font-cormorant italic text-lg sm:text-xl text-[#d4af37]/85 tracking-widest mb-3">
+        A Sanctuary for Readers
+      </p>
+
+      <!-- Glowing Light Beam -->
+      <div class="h-[2px] mx-auto mb-6 cinematic-beam"></div>
+
+      <!-- Integrated Editorial Briefing Card -->
+      <div class="bg-[#0f1117]/95 border border-[#1e2230] rounded-2xl p-6 sm:p-7 shadow-2xl backdrop-blur-md text-left text-xs sm:text-sm text-slate-300 space-y-3.5 mb-6">
+        <div class="flex items-center justify-between border-b border-[#1e2230] pb-3 mb-1">
+          <span class="font-playfair text-xs uppercase tracking-widest text-[#d4af37] font-semibold flex items-center gap-1.5">
+            <span>✦</span> Technical Assessment Briefing
+          </span>
+          <span class="text-[11px] text-slate-500 font-mono">v3.5 Responsive Build</span>
+        </div>
+
+        <p class="leading-relaxed">
+          Welcome to <strong class="text-white font-medium">The Midnight Library</strong>, an elite personal reading tracker and archive. Engineered with pure client-side Vanilla JavaScript and Tailwind CSS for instant GitHub Pages hosting.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div class="bg-[#141722] p-3 rounded-xl border border-[#1e2230]">
+            <span class="block text-[#d4af37] font-semibold text-xs uppercase tracking-wider mb-1">120+ Curated Volumes</span>
+            <span class="text-slate-400 text-xs">Pre-loaded archive across Classics, Philosophy, Sci-Fi, and Tech.</span>
+          </div>
+          <div class="bg-[#141722] p-3 rounded-xl border border-[#1e2230]">
+            <span class="block text-emerald-400 font-semibold text-xs uppercase tracking-wider mb-1">Dynamic Themes</span>
+            <span class="text-slate-400 text-xs">Instant switch between Midnight Dark and Pristine Light modes.</span>
+          </div>
+          <div class="bg-[#141722] p-3 rounded-xl border border-[#1e2230]">
+            <span class="block text-amber-300 font-semibold text-xs uppercase tracking-wider mb-1">Local-First Engine</span>
+            <span class="text-slate-400 text-xs">100% private in-browser storage with instant JSON backups.</span>
+          </div>
+        </div>
+
+        <!-- Timer Notice -->
+        <div class="flex items-center justify-between pt-2 text-[11px] text-slate-400 border-t border-[#1e2230]">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#d4af37] animate-ping"></span>
+            Auto-entering library in <span id="intro-timer-seconds" class="font-mono text-white font-bold">12</span>s...
+          </span>
+          <span class="text-slate-500 italic">Press Enter or click below</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button
+        id="enter-library-btn"
+        type="button"
+        class="bg-[#d4af37] hover:bg-[#ba9529] text-slate-950 font-playfair font-bold text-sm tracking-wider px-8 py-3.5 rounded-xl shadow-lg transition-all duration-300 transform active:scale-95 hover:scale-105 flex items-center gap-2.5 mx-auto"
+      >
+        <span>ENTER THE MIDNIGHT LIBRARY</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Ambient Ambient Glow Background -->
+  <div class="fixed top-0 left-0 right-0 h-96 ambient-glow pointer-events-none -z-10"></div>
+
+  <!-- ======================================================== -->
+  <!-- 2. STICKY RESPONSIVE HEADER & THEME CONTROLS -->
+  <!-- ======================================================== -->
+  <header class="border-b transition-colors duration-300 sticky top-0 z-30" style="background-color: var(--header-bg); border-color: var(--border-subtle); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        
+        <!-- Brand Identity & Mobile Controls Row -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors shadow-sm" style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--accent-gold);">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-playfair font-bold tracking-tight text-inherit">
+                  The Midnight Library
+                </h1>
+                <span class="text-[10px] tracking-wider uppercase font-semibold px-2 py-0.5 rounded-full hidden sm:inline-block transition-colors" style="background-color: var(--accent-gold-glow); color: var(--accent-gold); border: 1px solid var(--accent-gold);">
+                  SaaS Archive
+                </span>
+              </div>
+              <p class="text-xs font-cormorant italic tracking-wide" style="color: var(--text-muted);">
+                A sanctuary for readers &bull; Local-first reading tracker
+              </p>
+            </div>
+          </div>
+
+          <!-- Mobile Actions Cluster (Theme Toggle & Add Button) -->
+          <div class="flex items-center gap-1.5 md:hidden">
+            <!-- Theme Toggle Mobile -->
+            <button
+              type="button"
+              id="theme-toggle-btn-mobile"
+              class="theme-toggle-btn p-2 rounded-xl transition-colors border"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+              title="Toggle Light/Dark Theme"
+              aria-label="Toggle Theme"
+            >
+              <span class="theme-icon text-sm">🌙</span>
+            </button>
+
+            <!-- Quick Add Button Mobile -->
+            <button
+              type="button"
+              id="mobile-add-btn"
+              class="p-2 rounded-xl text-xs font-bold transition shadow-sm active:scale-95"
+              style="background-color: var(--accent-gold); color: #0f1117;"
+              title="Add Book"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Counters & Desktop Toolbar -->
+        <div class="flex flex-wrap items-center justify-between md:justify-end gap-2 text-xs">
+          
+          <!-- Live Status Metrics Chip -->
+          <div id="live-metrics-chip" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors overflow-x-auto" style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle);">
+            <span class="text-slate-400">Loading catalog...</span>
+          </div>
+
+          <!-- Desktop Utility Buttons -->
+          <div class="flex items-center gap-1.5">
+            
+            <!-- THEME SWITCHER TOGGLE (Desktop) -->
+            <button
+              type="button"
+              id="theme-toggle-btn-desktop"
+              class="theme-toggle-btn hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+              title="Switch between Midnight Dark and Pristine Light modes"
+            >
+              <span class="theme-icon text-sm">🌙</span>
+              <span class="theme-text">Dark Mode</span>
+            </button>
+
+            <!-- Surprise Me Button -->
+            <button
+              type="button"
+              id="surprise-me-btn"
+              class="px-2.5 py-1.5 rounded-xl border font-medium flex items-center gap-1 transition-all active:scale-95"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--accent-gold);"
+              title="Spin for a random unread book recommendation"
+            >
+              <span>🎲</span>
+              <span class="hidden sm:inline">Surprise</span>
+            </button>
+
+            <!-- Export JSON -->
+            <button
+              type="button"
+              id="export-json-btn"
+              class="px-2.5 py-1.5 rounded-xl border font-medium flex items-center gap-1 transition-all active:scale-95"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-secondary);"
+              title="Export complete database as JSON backup file"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span class="hidden sm:inline">Export</span>
+            </button>
+
+            <!-- Import JSON Trigger -->
+            <label
+              for="import-json-input"
+              class="px-2.5 py-1.5 rounded-xl border font-medium flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-secondary);"
+              title="Import database from JSON file"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span class="hidden sm:inline">Import</span>
+            </label>
+            <input type="file" id="import-json-input" accept=".json" class="hidden" />
+
+            <!-- About / Replay Splash Trigger -->
+            <button
+              type="button"
+              id="replay-intro-btn"
+              class="p-2 rounded-xl border transition-colors"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-muted);"
+              title="Replay Cinematic Intro & Editorial Briefing"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+
+            <!-- Add Book Desktop Trigger -->
+            <button
+              type="button"
+              id="header-add-book-btn"
+              class="hidden lg:flex px-3.5 py-1.5 rounded-xl font-semibold transition items-center gap-1.5 shadow-sm active:scale-95"
+              style="background-color: var(--accent-gold); color: #0f1117;"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+              <span>Add Book</span>
+            </button>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- 3. MAIN WORKSPACE: SIDEBAR FORM & BOOK CATALOG -->
+  <!-- ======================================================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 flex-grow w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+      
+      <!-- LEFT COLUMN: Sticky Add Book Sidebar Form (Desktop) -->
+      <section class="lg:col-span-4 lg:sticky lg:top-20 order-2 lg:order-1 hidden lg:block">
+        <div class="rounded-2xl p-6 border transition-all duration-300" style="background-color: var(--bg-surface); border-color: var(--border-subtle); box-shadow: var(--card-shadow);">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b" style="border-color: var(--border-subtle);">
+            <h2 class="font-playfair text-lg font-bold text-inherit flex items-center gap-2">
+              <span style="color: var(--accent-gold);">✦</span> Archive New Volume
+            </h2>
+            <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md font-mono" style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-muted);">
+              Local First
+            </span>
+          </div>
+
+          <!-- Add Book Form Element -->
+          <form id="book-form" novalidate class="space-y-4 text-xs">
+            
+            <!-- Book Title Input -->
+            <div>
+              <label for="book-title" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                Title <span style="color: var(--accent-gold);">*</span>
+              </label>
+              <input
+                type="text"
+                id="book-title"
+                placeholder="e.g. The Brothers Karamazov"
+                class="w-full rounded-xl px-3.5 py-2.5 text-sm transition-all focus:outline-none border"
+                style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                autocomplete="off"
+              />
+              <p id="title-error" class="hidden text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span>Please enter a title</span>
+              </p>
+            </div>
+
+            <!-- Book Author Input -->
+            <div>
+              <label for="book-author" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                Author <span style="color: var(--accent-gold);">*</span>
+              </label>
+              <input
+                type="text"
+                id="book-author"
+                placeholder="e.g. Fyodor Dostoevsky"
+                class="w-full rounded-xl px-3.5 py-2.5 text-sm transition-all focus:outline-none border"
+                style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                autocomplete="off"
+              />
+              <p id="author-error" class="hidden text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span>Please enter an author</span>
+              </p>
+            </div>
+
+            <!-- Status & Genre in 2 Columns -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="book-status" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                  Status
+                </label>
+                <select
+                  id="book-status"
+                  class="w-full rounded-xl px-3 py-2 text-xs transition cursor-pointer border focus:outline-none"
+                  style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                >
+                  <option value="To read">To read</option>
+                  <option value="Reading">Reading</option>
+                  <option value="Finished">Finished</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="book-genre" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                  Genre
+                </label>
+                <input
+                  type="text"
+                  id="book-genre"
+                  list="genre-datalist"
+                  placeholder="e.g. Philosophy"
+                  class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+                  style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+
+            <!-- Page Tracker (Current / Total) -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="book-current-page" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                  Current Page
+                </label>
+                <input
+                  type="number"
+                  id="book-current-page"
+                  min="0"
+                  placeholder="0"
+                  class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+                  style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                />
+              </div>
+
+              <div>
+                <label for="book-total-pages" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                  Total Pages
+                </label>
+                <input
+                  type="number"
+                  id="book-total-pages"
+                  min="1"
+                  placeholder="350"
+                  class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+                  style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                />
+              </div>
+            </div>
+
+            <!-- Initial Notes (Optional) -->
+            <div>
+              <label for="book-notes" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+                Reflections / Notes <span class="font-normal lowercase" style="color: var(--text-muted);">(optional)</span>
+              </label>
+              <textarea
+                id="book-notes"
+                rows="2"
+                placeholder="Key quotes, literary impressions..."
+                class="w-full rounded-xl px-3 py-2 text-xs transition resize-none border focus:outline-none"
+                style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+              ></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+              <button
+                type="submit"
+                id="add-book-btn"
+                class="w-full font-playfair font-bold text-xs tracking-wider px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                style="background-color: var(--accent-gold); color: #0f1117;"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                <span>Add Volume to Archive</span>
+              </button>
+            </div>
+
+          </form>
+
+          <div class="mt-5 pt-4 border-t flex items-start gap-2 text-xs" style="border-color: var(--border-subtle); color: var(--text-muted);">
+            <span style="color: var(--accent-gold);">💡</span>
+            <p>New volumes automatically unshift to the head of your collection and persist in browser localStorage.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Search, Filters, Sorters & Catalog Cards -->
+      <section class="lg:col-span-8 order-1 lg:order-2 space-y-5">
+        
+        <!-- Search and Filter Bar -->
+        <div class="rounded-2xl p-4 sm:p-5 border transition-all duration-300" style="background-color: var(--bg-surface); border-color: var(--border-subtle); box-shadow: var(--card-shadow);">
+          <div class="flex flex-col sm:flex-row gap-3">
+            
+            <!-- Case-Insensitive Search Input -->
+            <div class="relative flex-grow">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style="color: var(--text-muted);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Search across 120+ books by title or author..."
+                class="w-full rounded-xl pl-10 pr-9 py-2.5 text-sm transition focus:outline-none border"
+                style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                id="clear-search-btn"
+                class="hidden absolute inset-y-0 right-0 pr-3 flex items-center transition"
+                style="color: var(--text-muted);"
+                title="Clear search"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Quick Status Filter Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 flex-shrink-0" id="filter-pills">
+              <button
+                type="button"
+                data-filter="All"
+                class="filter-pill active-pill px-3 py-2 rounded-xl text-xs font-semibold border transition shadow-sm"
+                style="background-color: var(--accent-gold); color: #0f1117; border-color: var(--accent-gold);"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                data-filter="Reading"
+                class="filter-pill px-3 py-2 rounded-xl text-xs font-semibold border transition"
+                style="background-color: var(--bg-surface-elevated); color: var(--text-secondary); border-color: var(--border-subtle);"
+              >
+                Reading
+              </button>
+              <button
+                type="button"
+                data-filter="Finished"
+                class="filter-pill px-3 py-2 rounded-xl text-xs font-semibold border transition"
+                style="background-color: var(--bg-surface-elevated); color: var(--text-secondary); border-color: var(--border-subtle);"
+              >
+                Finished
+              </button>
+              <button
+                type="button"
+                data-filter="To read"
+                class="filter-pill px-3 py-2 rounded-xl text-xs font-semibold border transition"
+                style="background-color: var(--bg-surface-elevated); color: var(--text-secondary); border-color: var(--border-subtle);"
+              >
+                To Read
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Metadata & Sorting Bar -->
+          <div class="mt-3.5 pt-3.5 border-t flex flex-wrap items-center justify-between gap-3 text-xs" style="border-color: var(--border-subtle); color: var(--text-muted);">
+            <div class="flex items-center gap-2">
+              <span id="results-count" class="font-medium" style="color: var(--text-secondary);">Cataloging 120 volumes</span>
+              <span>&bull;</span>
+              <span id="page-indicator">Page 1</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <!-- Sort Dropdown -->
+              <div class="flex items-center gap-1.5">
+                <span>Sort:</span>
+                <select id="sort-select" class="rounded-lg px-2.5 py-1 text-xs focus:outline-none border transition" style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-secondary);">
+                  <option value="newest">Newest First</option>
+                  <option value="title">Title (A-Z)</option>
+                  <option value="rating">Highest Rating</option>
+                  <option value="progress">Reading Progress</option>
+                </select>
+              </div>
+
+              <!-- Reset to 120 Volumes Trigger -->
+              <button
+                id="reset-sample-btn"
+                type="button"
+                class="text-xs transition underline underline-offset-2"
+                style="color: var(--text-muted);"
+                title="Reload default 120+ catalog"
+              >
+                Reload 120 Catalog
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Book Catalog Cards Grid (1 col mobile, 2 col desktop) -->
+        <div id="books-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Empty State Component -->
+        <div id="empty-state" class="hidden rounded-2xl p-10 text-center border border-dashed transition" style="background-color: var(--bg-surface); border-color: var(--border-subtle);">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-muted);">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-playfair font-semibold mb-1" id="empty-state-title" style="color: var(--text-primary);">No books found</h3>
+          <p class="text-sm max-w-sm mx-auto mb-5" id="empty-state-desc" style="color: var(--text-muted);">
+            No titles match your current search or status filter.
+          </p>
+          <button
+            type="button"
+            id="empty-action-btn"
+            class="px-4 py-2 rounded-xl text-xs font-semibold border transition"
+            style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+          >
+            Clear Search & Filters
+          </button>
+        </div>
+
+        <!-- Responsive Pagination Controls -->
+        <div id="pagination-controls" class="rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 border transition" style="background-color: var(--bg-surface); border-color: var(--border-subtle);">
+          <div class="flex items-center gap-2 text-xs" style="color: var(--text-muted);">
+            <span>Show:</span>
+            <select id="items-per-page" class="rounded-lg px-2.5 py-1 text-xs focus:outline-none border transition" style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);">
+              <option value="12">12 per page</option>
+              <option value="24" selected>24 per page</option>
+              <option value="48">48 per page</option>
+              <option value="120">All 120+ volumes</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5" id="pagination-buttons">
+            <button id="prev-page-btn" class="px-3 py-1.5 rounded-lg border text-xs transition disabled:opacity-40 disabled:cursor-not-allowed" style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-secondary);">
+              &larr; Prev
+            </button>
+            <div id="page-numbers" class="flex items-center gap-1"></div>
+            <button id="next-page-btn" class="px-3 py-1.5 rounded-lg border text-xs transition disabled:opacity-40 disabled:cursor-not-allowed" style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-secondary);">
+              Next &rarr;
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 4. MODALS: ADD BOOK, REVIEWS, & SURPRISE ROULETTE -->
+  <!-- ======================================================== -->
+
+  <!-- Add Book Modal (For Mobile & Quick Add) -->
+  <div id="book-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="rounded-2xl p-6 shadow-2xl max-w-lg w-full relative border transition" style="background-color: var(--bg-surface); border-color: var(--border-subtle); color: var(--text-primary);">
+      <button
+        type="button"
+        id="close-modal-btn"
+        class="absolute top-4 right-4 p-2 rounded-xl border transition"
+        style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-muted);"
+        title="Close modal"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="pb-3 mb-4 border-b" style="border-color: var(--border-subtle);">
+        <h2 class="font-playfair text-lg font-bold flex items-center gap-2">
+          <span style="color: var(--accent-gold);">✦</span> Add Volume to Archive
+        </h2>
+        <p class="text-xs font-cormorant italic" style="color: var(--text-muted);">Expand your nocturnal literary collection</p>
+      </div>
+
+      <form id="modal-book-form" novalidate class="space-y-4 text-xs">
+        <div>
+          <label for="modal-book-title" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+            Title <span style="color: var(--accent-gold);">*</span>
+          </label>
+          <input
+            type="text"
+            id="modal-book-title"
+            placeholder="e.g. Neuromancer"
+            class="w-full rounded-xl px-3.5 py-2.5 text-sm transition focus:outline-none border"
+            style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+            autocomplete="off"
+          />
+          <p id="modal-title-error" class="hidden text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span>Please enter a title</span>
+          </p>
+        </div>
+
+        <div>
+          <label for="modal-book-author" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+            Author <span style="color: var(--accent-gold);">*</span>
+          </label>
+          <input
+            type="text"
+            id="modal-book-author"
+            placeholder="e.g. William Gibson"
+            class="w-full rounded-xl px-3.5 py-2.5 text-sm transition focus:outline-none border"
+            style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+            autocomplete="off"
+          />
+          <p id="modal-author-error" class="hidden text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span>Please enter an author</span>
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="modal-book-status" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+              Status
+            </label>
+            <select
+              id="modal-book-status"
+              class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+            >
+              <option value="To read">To read</option>
+              <option value="Reading">Reading</option>
+              <option value="Finished">Finished</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="modal-book-genre" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+              Genre
+            </label>
+            <input
+              type="text"
+              id="modal-book-genre"
+              list="genre-datalist"
+              placeholder="e.g. Sci-Fi"
+              class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="modal-book-current-page" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+              Current Page
+            </label>
+            <input
+              type="number"
+              id="modal-book-current-page"
+              min="0"
+              placeholder="0"
+              class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+            />
+          </div>
+          <div>
+            <label for="modal-book-total-pages" class="block font-semibold uppercase tracking-wider mb-1" style="color: var(--text-secondary);">
+              Total Pages
+            </label>
+            <input
+              type="number"
+              id="modal-book-total-pages"
+              min="1"
+              placeholder="280"
+              class="w-full rounded-xl px-3 py-2 text-xs transition border focus:outline-none"
+              style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+            />
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button
+            type="submit"
+            class="w-full font-playfair font-bold text-xs tracking-wider px-4 py-3 rounded-xl transition shadow-sm active:scale-95 flex items-center justify-center gap-2"
+            style="background-color: var(--accent-gold); color: #0f1117;"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            <span>Add Volume to Archive</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Surprise Me Random Picker Roulette Modal -->
+  <div id="roulette-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity">
+    <div class="rounded-2xl p-6 sm:p-7 shadow-2xl max-w-md w-full text-center relative border transition" style="background-color: var(--bg-surface); border-color: var(--accent-gold); color: var(--text-primary);">
+      <button
+        type="button"
+        id="close-roulette-btn"
+        class="absolute top-4 right-4 p-2 rounded-xl transition border"
+        style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-muted);"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center text-xl border" style="background-color: var(--accent-gold-glow); border-color: var(--accent-gold); color: var(--accent-gold);">
+        🎲
+      </div>
+      <h3 class="font-playfair text-lg font-bold uppercase tracking-wider mb-1" style="color: var(--text-primary);">Literary Serendipity</h3>
+      <p class="text-xs font-cormorant italic mb-4" style="color: var(--text-muted);">The library has selected your next read:</p>
+
+      <div id="roulette-card" class="rounded-xl p-5 mb-5 text-left border transition-all" style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle);">
+        <span id="roulette-genre" class="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border mb-2" style="background-color: var(--bg-surface); color: var(--accent-gold); border-color: var(--border-subtle);">Philosophy</span>
+        <h4 id="roulette-title" class="font-playfair text-xl font-bold mb-1" style="color: var(--text-primary);">Meditations</h4>
+        <p id="roulette-author" class="text-xs mb-3" style="color: var(--text-muted);">by Marcus Aurelius</p>
+        <div class="flex items-center justify-between text-xs pt-2 border-t" style="border-color: var(--border-subtle); color: var(--text-secondary);">
+          <span id="roulette-pages">256 pages</span>
+          <span id="roulette-status" class="font-medium" style="color: var(--accent-gold);">To read</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          id="spin-again-btn"
+          class="flex-1 py-2.5 rounded-xl text-xs font-semibold border transition"
+          style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+        >
+          Spin Again 🔄
+        </button>
+        <button
+          type="button"
+          id="accept-book-btn"
+          class="flex-1 font-bold py-2.5 rounded-xl text-xs font-playfair tracking-wider transition shadow-sm"
+          style="background-color: var(--accent-gold); color: #0f1117;"
+        >
+          Begin Reading
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review / Notes Modal -->
+  <div id="note-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="rounded-2xl p-6 shadow-2xl max-w-md w-full relative border transition" style="background-color: var(--bg-surface); border-color: var(--border-subtle); color: var(--text-primary);">
+      <button
+        type="button"
+        id="close-note-btn"
+        class="absolute top-4 right-4 p-2 rounded-xl border transition"
+        style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-muted);"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <h3 class="font-playfair text-base font-bold mb-0.5 flex items-center gap-1.5" style="color: var(--text-primary);">
+        <span style="color: var(--accent-gold);">✎</span> Literary Reflections
+      </h3>
+      <p id="note-book-title" class="text-xs font-playfair italic mb-3" style="color: var(--text-muted);">Book Title</p>
+
+      <div class="mb-3">
+        <label class="block text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--text-secondary);">Personal Star Rating</label>
+        <div id="modal-star-rating" class="flex items-center gap-1.5 text-lg">
+          <!-- 5 interactive stars -->
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="modal-note-textarea" class="block text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--text-secondary);">
+          Review Notes & Quotes
+        </label>
+        <textarea
+          id="modal-note-textarea"
+          rows="4"
+          placeholder="Capture your memorable quotes, personal thoughts, or critical review..."
+          class="w-full rounded-xl p-3 text-xs transition border focus:outline-none"
+          style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          id="cancel-note-btn"
+          class="px-4 py-2 rounded-xl border text-xs transition"
+          style="background-color: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-primary);"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="save-note-btn"
+          class="px-5 py-2 rounded-xl font-playfair font-bold text-xs tracking-wider transition shadow-sm"
+          style="background-color: var(--accent-gold); color: #0f1117;"
+        >
+          Save Note
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared Datalist for Genre Suggestions -->
+  <datalist id="genre-datalist">
+    <option value="Fiction"></option>
+    <option value="Philosophy"></option>
+    <option value="Sci-Fi & Fantasy"></option>
+    <option value="Dystopian"></option>
+    <option value="Technology & Code"></option>
+    <option value="Classic Literature"></option>
+    <option value="Psychology"></option>
+    <option value="Biography"></option>
+    <option value="Non-Fiction"></option>
+  </datalist>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 rounded-xl px-4 py-3 shadow-xl flex items-center gap-2.5 text-xs font-medium pointer-events-none border" style="background-color: var(--bg-surface); border-color: var(--accent-gold); color: var(--text-primary);">
+    <span id="toast-icon">✨</span>
+    <span id="toast-message">Notification</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t py-6 mt-16 text-center text-xs transition-colors" style="border-color: var(--border-subtle); color: var(--text-muted); background-color: var(--bg-surface);">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span style="color: var(--accent-gold);">✦</span>
+        <span class="font-playfair">The Midnight Library</span>
+        <span>&bull;</span>
+        <span class="font-cormorant italic">Elite Client-Side Reading SaaS</span>
+      </div>
+      <div>
+        <span>120+ Curated Volumes &bull; Local-First Architecture &bull; GitHub Pages Ready</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
